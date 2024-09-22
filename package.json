@@ -1,0 +1,58 @@
+{
+  "name": "auto-learnt",
+  "version": "1.0.0",
+  "main": "./src/main.ts",
+  "scripts": {
+    "start": "tsx ./src/main.ts",
+    "watch": "rollup -c  && node ./dist/main.js",
+    "build": "rimraf ./dist && rollup -c",
+    "postbuild": "pkg .",
+    "build:pkg": "npm run build &&rimraf ./build && pkg . && npm run copyFile"
+  },
+  "engines": {
+    "node": ">= 18"
+  },
+  "author": "william",
+  "license": "ISC",
+  "description": "auto learnt by qd",
+  "type": "commonjs",
+  "bin": "./dist/main.js",
+  "pkg": {
+    "scripts": ["dist/**/*.js","node_modules/tesseract.js/src/worker-script/node/*.js"],
+    "assets": [
+      "assets/**/*",
+      "package.json",
+      "config.json"
+    ],
+    "targets": [
+      "node18-macos-arm64"
+    ],
+    "outputPath": "./out"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "fs-extra": "^11.2.0",
+    "puppeteer": "^23.3.0",
+    "puppeteer-core": "^23.3.0",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.5.4",
+    "esbuild": "^0.23.1",
+    "pkg": "^5.8.1",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.21.3",
+    "rollup-plugin-filesize": "^10.0.0",
+    "rollup-plugin-node-externals": "^7.1.3",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "tsx": "^4.19.1"
+  }
+}

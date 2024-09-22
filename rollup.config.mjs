@@ -18,8 +18,6 @@ export default {
     format: "cjs",
     dir: "dist",
     sourcemap: true,
-    // sourcemapExcludeSources: true,
-    // exports: "auto",
   },
   moduleContext: {},
   plugins: [

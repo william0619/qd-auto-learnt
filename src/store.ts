@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { AttendanceModel } from "./model/attendance.model";
+import { RecordModel } from "./model/attendance.model";
 
 /**
  author: william   email:362661044@qq.com
@@ -7,7 +7,7 @@ import { AttendanceModel } from "./model/attendance.model";
  **/
 
 export class Store {
-  recordData: Array<AttendanceModel> = [];
+  recordData: Array<RecordModel> = [];
 
   subjectData: Array<any> = [];
 
@@ -15,30 +15,26 @@ export class Store {
 
   constructor() {}
 
-  setSubjectData(data: Array<any>) {
-    this.subjectData = data;
+  setRecord(data: Array<any>) {
+    this.recordData = data.map((item) => {
+      return new RecordModel(item);
+    });
+    this.recordData = this.recordData.filter((item) => {
+      return dayjs().isAfter(item.teachDateTime);
+    });
+    console.log("this.recordData", this.recordData);
   }
 
-  setRecord(data: Array<AttendanceModel>) {
-    this.recordData = data;
-  }
-
-  groupByRecordSubject(): Array<AttendanceModel> {
+  groupByRecordSubject(): Array<RecordModel> {
     const map = this.recordData.reduce((map, item) => {
       const course_code = item.course_code;
       if (!map.has(course_code)) {
         map.set(course_code, item);
       }
       return map;
-    }, new Map<string, AttendanceModel>());
+    }, new Map<string, RecordModel>());
 
     return Array.from(map.values());
-  }
-
-  getUsableCourse() {
-    this.recordData.filter((item) => {
-      return dayjs(item.teach_date);
-    });
   }
 }
 

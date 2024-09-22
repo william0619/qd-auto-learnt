@@ -49,3 +49,17 @@ export async function sleep(time: number) {
     }, time);
   });
 }
+
+// export async function connectInfo() {
+//   try {
+//     const res = await nodeFetch("http://localhost:9222/json/version", {
+//       method: "get",
+//     });
+//     const data = await res.json();
+//     console.log("browser config", data);
+//     return data;
+//   } catch (error) {
+//     console.log("error: 无法连接 http://localhost:9222/json/version");
+//     return {};
+//   }
+// }

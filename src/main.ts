@@ -30,7 +30,7 @@ async function main() {
   // });
   const browser = await puppeteer.connect({
     browserWSEndpoint:
-      "ws://localhost:9222/devtools/browser/053c8ed3-f13b-46d6-b3aa-1e47ee2a2ceb",
+      "ws://localhost:9222/devtools/browser/07bc3e64-068b-4478-97d7-c7ae6a31c027",
     defaultViewport: {
       width: 0,
       height: 0,

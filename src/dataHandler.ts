@@ -75,7 +75,7 @@ export class DataHandler {
         this.store.studentId,
       );
 
-      this.store.setSubjectData(subjectData);
+      this.store.subjectData = subjectData;
 
       const curseRes = await page.evaluate(
         async (subject, studentId, semesterName) => {
@@ -117,6 +117,7 @@ export class DataHandler {
         this.store.studentId,
         process.env.SEMESTER_NAME,
       );
+      this.store.setRecord(curseRes);
 
       console.log("curseRes", curseRes);
     }

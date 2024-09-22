@@ -27,3 +27,4 @@ dist-ssr
 /out
 /release
 /dist2
+config.json

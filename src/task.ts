@@ -1,4 +1,5 @@
 import { Browser } from "puppeteer";
+import { Store } from "./store";
 
 /**
  author: william   email:362661044@qq.com
@@ -24,5 +25,10 @@ import { Browser } from "puppeteer";
 // 			});
 // 		}
 export class Task {
-  constructor(private browser: Browser) {}
+  constructor(
+    private browser: Browser,
+    private store: Store,
+  ) {}
+
+  sign() {}
 }

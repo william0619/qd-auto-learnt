@@ -10,26 +10,27 @@ import typescript from "rollup-plugin-typescript2";
 import json from "@rollup/plugin-json";
 import filesize from "rollup-plugin-filesize";
 import { nodeExternals } from "rollup-plugin-node-externals";
+import { defineConfig } from "rollup";
 
-export default {
+// rollup.config.js
+export default defineConfig({
   input: "./src/main.ts",
   output: {
-    // file: "./dist/main.js",
     format: "cjs",
     dir: "dist",
     sourcemap: true,
   },
-  moduleContext: {},
   plugins: [
+    typescript(),
     babel({
+      sourceMap: true,
       babelHelpers: "bundled",
       // skipPreflightCheck: true,
       exclude: "node_modules/**",
     }),
-    typescript(),
     // json(),
     nodeExternals(),
-    // nodeResolve(),
+    nodeResolve(),
     // nodeResolve({
     //   resolveOnly: ["puppeteer-core", "dayjs", "node-fetch"],
     // }),
@@ -37,4 +38,4 @@ export default {
     filesize(),
     // terser(),
   ],
-};
+});

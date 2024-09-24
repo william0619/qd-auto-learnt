@@ -2,7 +2,7 @@
  author: william   email:362661044@qq.com
  create_at: 2024/9/18
  **/
-import { Browser, HTTPResponse } from "puppeteer-core";
+import { Browser, HTTPResponse, Page } from "puppeteer-core";
 import { Store } from "./store";
 import { sleep } from "./utils";
 
@@ -45,14 +45,16 @@ export class DataHandler {
     page.on("response", getStudentId);
     await page.goto(this.myCourseUrl);
     await sleep(1000);
-    await page.close();
-    return true;
+    // await page.close();
+    return page;
   }
 
-  async getCourseData() {
+  async getCourseData(page?: Page) {
     if (this.store.studentId) {
-      const page = await this.browser.newPage();
-      await page.goto(this.myCourseUrl);
+      if (!page || page?.url() !== this.myCourseUrl) {
+        page = await this.browser.newPage();
+        await page.goto(this.myCourseUrl);
+      }
       const subjectData = await page.evaluate(
         async (semesterName, studentId) => {
           const r = await window.fetch(

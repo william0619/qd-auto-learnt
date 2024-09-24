@@ -43,8 +43,8 @@ async function main() {
   if (bool) {
     const store = new Store();
     const dataHandler = new DataHandler(browser, store);
-    await dataHandler.setStudentId();
-    await dataHandler.getCourseData();
+    const page = await dataHandler.setStudentId();
+    await dataHandler.getCourseData(page);
     console.log("获取课程1");
   }
 

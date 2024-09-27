@@ -33,6 +33,7 @@ export class DataHandler {
               const d = res.Data.find((item: any) => {
                 return item.school_name === process.env.SCHOOL_NAME;
               });
+              // console.log("d", d);
               this.store.studentId = d.student_id;
               page.off("response", getStudentId);
             }

@@ -24,6 +24,9 @@ export interface Record {
   vhall_company: string;
   sub_account: string;
   limit_user_top: string;
+  evaluate_id: string;
+  vhall_type: string;
+  res_folder_ids: string;
 }
 export class RecordModel implements Record {
   constructor(data: Record) {
@@ -45,6 +48,9 @@ export class RecordModel implements Record {
     this.vhall_id = data.vhall_id;
     this.duration = data.duration;
     this.learning_duration = data.learning_duration;
+    this.evaluate_id = data.evaluate_id;
+    this.vhall_type = data.vhall_type;
+    this.res_folder_ids = data.res_folder_ids;
   }
 
   get totalDurationMinutes(): number {
@@ -70,8 +76,25 @@ export class RecordModel implements Record {
     return Number(this.learning_duration) >= this.totalDurationMinutes;
   }
 
-  getSignReqParams() {
-    return {
+  get resCourseName() {
+    return this.course_name + "," + this.res_folder_names;
+  }
+
+  addStudentRewardsParams() {
+    const rewards_content = "参加课程学习:" + this.resCourseName;
+    const params = {
+      student_id: this.student_id,
+      source_id: this.course_scheme_id,
+      rewards_content: rewards_content,
+      sys_name: "service",
+      opr_id: "learning",
+      actions_name: "learningCourse",
+    };
+    return params;
+  }
+
+  signReqParamsData() {
+    const params = {
       teach_date: this.teach_date.substring(0, 10),
       teach_time: this.teach_time,
       sub_account: this.sub_account,
@@ -79,16 +102,7 @@ export class RecordModel implements Record {
       vhallid: this.vhall_id,
       attendance_id: this.attendance_id,
     };
-  }
-
-  signReqParamsFormData() {
-    const formData = new FormData();
-    const params = this.getSignReqParams();
-    for (const key in params) {
-      // @ts-ignore
-      formData.append(key, params[key]);
-    }
-    return formData;
+    return params;
   }
 
   attendance_id: string;
@@ -109,4 +123,7 @@ export class RecordModel implements Record {
   teacher_id: string;
   vhall_company: string;
   vhall_id: string;
+  vhall_type: string;
+  evaluate_id: string;
+  res_folder_ids: string;
 }

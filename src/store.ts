@@ -13,6 +13,8 @@ export class Store {
 
   studentId: string = "";
 
+  // userId: string = "";
+
   constructor() {}
 
   setRecord(data: Array<any>) {

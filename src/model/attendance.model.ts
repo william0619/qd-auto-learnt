@@ -47,11 +47,13 @@ export class RecordModel implements Record {
     this.learning_duration = data.learning_duration;
   }
 
-  get totalDurationTime() {
+  get totalDurationMinutes(): number {
     const [start, end] = this.teach_time_text.split("~");
-    const startTime = dayjs(start, "HH:mm");
-    const endTime = dayjs(end, "HH:mm");
-    return dayjs.duration(endTime.diff(startTime), "minutes");
+    const [sh, sm] = start.split(":");
+    const [eh, em] = end.split(":");
+    const a = dayjs.duration({ hours: +sh, minutes: +sm }).asMinutes();
+    const b = dayjs.duration({ hours: +eh, minutes: +em }).asMinutes();
+    return b - a;
   }
 
   get teachDateTime() {
@@ -64,11 +66,29 @@ export class RecordModel implements Record {
     return this.teachDateTime.format("YYYY-MM-DD HH:mm:ss");
   }
 
-  isFinished() {
-    const allMinutes = +this.totalDurationTime.toString();
-    const usedMinutes = +this.duration;
-    const d = (allMinutes - usedMinutes) / allMinutes;
-    return d > 0.8;
+  isLearned() {
+    return Number(this.learning_duration) >= this.totalDurationMinutes;
+  }
+
+  getSignReqParams() {
+    return {
+      teach_date: this.teach_date.substring(0, 10),
+      teach_time: this.teach_time,
+      sub_account: this.sub_account,
+      limit_user_top: this.limit_user_top,
+      vhallid: this.vhall_id,
+      attendance_id: this.attendance_id,
+    };
+  }
+
+  signReqParamsFormData() {
+    const formData = new FormData();
+    const params = this.getSignReqParams();
+    for (const key in params) {
+      // @ts-ignore
+      formData.append(key, params[key]);
+    }
+    return formData;
   }
 
   attendance_id: string;

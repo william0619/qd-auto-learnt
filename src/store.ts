@@ -19,22 +19,11 @@ export class Store {
     this.recordData = data.map((item) => {
       return new RecordModel(item);
     });
+    // 过滤 未开始的 和 已经学习完毕的
     this.recordData = this.recordData.filter((item) => {
-      return dayjs().isAfter(item.teachDateTime);
+      return dayjs().isAfter(item.teachDateTime) && !item.isLearned();
     });
-    console.log("this.recordData", this.recordData);
-  }
-
-  groupByRecordSubject(): Array<RecordModel> {
-    const map = this.recordData.reduce((map, item) => {
-      const course_code = item.course_code;
-      if (!map.has(course_code)) {
-        map.set(course_code, item);
-      }
-      return map;
-    }, new Map<string, RecordModel>());
-
-    return Array.from(map.values());
+    return this.recordData;
   }
 }
 

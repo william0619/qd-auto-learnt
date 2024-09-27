@@ -1,5 +1,5 @@
-import { Browser } from "puppeteer";
 import { Store } from "./store";
+import { Page, Browser } from "puppeteer-core";
 
 /**
  author: william   email:362661044@qq.com
@@ -25,10 +25,24 @@ import { Store } from "./store";
 // 			});
 // 		}
 export class Task {
+  get maxTask() {
+    const num = Number(process.env.MAX_TASK ?? 10);
+    if (num > 30) {
+      return 30;
+    }
+    return num;
+  }
+
+  taskNum = 0;
+
   constructor(
     private browser: Browser,
     private store: Store,
   ) {}
 
-  sign() {}
+  runTask() {}
+
+  async runSign(page: Page) {
+    const url = await page.evaluate(() => {});
+  }
 }

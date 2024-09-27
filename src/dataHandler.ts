@@ -109,10 +109,8 @@ export class DataHandler {
             const json = await response.json();
             if (json.result === "0") {
               allData = [...allData, ...json.Data];
-              console.log("allData", allData);
             }
           }
-          console.log("allData", allData);
           return allData;
         },
         subjectData,
@@ -120,79 +118,8 @@ export class DataHandler {
         process.env.SEMESTER_NAME,
       );
       this.store.setRecord(curseRes);
-
-      console.log("curseRes", curseRes);
+      return this.store.recordData;
     }
-  }
-
-  async findCourse(subjectData: Array<{ course_id: string }>) {}
-
-  async getCourse() {
-    const page = await this.browser.newPage();
-    await page.goto(this.myCourseUrl);
-    const resData = await page.evaluate(async () => {
-      const form = new FormData();
-      form.set("qry_month", "202409");
-      // https://www.qiaoda.com.cn/api/service/Attendance/getCurrMonthCourse.json?bust=1726800192583
-      const res = await window.fetch(
-        `https://www.qiaoda.com.cn/api/service/Attendance/getCurrMonthCourse.json?bust=${Date.now()}`,
-        {
-          method: "POST",
-          mode: "cors",
-          credentials: "include",
-          body: form,
-        },
-      );
-      const r = await res.json();
-      if (r.result === "0") {
-        return r.Data;
-      }
-      return null;
-    });
-    // console.log("resData", resData);
-    if (!resData) {
-      await page.close();
-      return;
-    }
-
-    this.store.setRecord(resData);
-    const subject = this.store.groupByRecordSubject();
-    const res2 = await page.evaluate(
-      async (subject, semesterName) => {
-        const getData = (args: {
-          qry_course_id: string;
-          qry_student_id: string;
-        }) => {
-          const qry_course_id = args.qry_course_id;
-          const qry_student_id = args.qry_student_id;
-          return window.fetch(
-            `https://www.qiaoda.com.cn/api/edu/CourseScheme/queryCourseListByStudentID.json?PageSize=0&qry_course_id=${qry_course_id}&qry_semester_name=${semesterName}&qry_student_id=${qry_student_id}`,
-            {
-              method: "GET",
-              mode: "cors",
-              credentials: "include",
-            },
-          );
-        };
-        const tasks = subject.map((item) => {
-          return getData({
-            qry_course_id: item.course_id,
-            qry_student_id: item.student_id,
-          });
-        });
-        //
-        const resList = await Promise.all(tasks);
-        console.log("resList", resList);
-        const r = resList.map(async (response) => {
-          // @ts-ignore
-          return await response.json();
-        });
-        console.log("r", r);
-        return [];
-      },
-      subject,
-      process.env.SEMESTER_NAME,
-    );
-    console.log("res2", res2);
+    return [];
   }
 }

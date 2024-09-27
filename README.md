@@ -2,7 +2,7 @@
 ### MAC下chrome浏览器debug启动
 ```shell
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
-C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
 ```
 
 ### 使用步骤

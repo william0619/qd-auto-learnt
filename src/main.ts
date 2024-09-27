@@ -13,46 +13,46 @@ import path from "node:path";
 import { DataHandler } from "./dataHandler";
 import { Store } from "./store";
 import { TaskQueue } from "./taskQueue";
+import { createSecretKey } from "node:crypto";
 // import { DB } from "./db";
 async function main() {
   console.log("cmd path:", process.cwd());
   console.log("execPath:", path.dirname(process.execPath));
   console.log("date:", dayjs().format("YYYY-MM-DD"));
   await setConfig();
-  // const browser = await puppeteer.launch({
-  //   executablePath: getChromePath(),
-  //   headless: false,
-  //   devtools: true,
-  //   defaultViewport: {
-  //     width: 0,
-  //     height: 0,
-  //   },
-  //   // args: ["--mute-audio"],
-  // });
-  const browser = await puppeteer.connect({
-    browserWSEndpoint:
-      "ws://localhost:9222/devtools/browser/8cd2446e-e5ec-4551-9f35-0de6fe19e5ee",
+  const cPath = getChromePath();
+  console.log("launch path", cPath);
+  const browser = await puppeteer.launch({
+    executablePath: cPath,
+    headless: globalThis.HEADLESS,
+    devtools: false,
     defaultViewport: {
       width: 0,
       height: 0,
     },
+    // args: ["--mute-audio"],
   });
-  // const loginPage = new Login(browser);
-  // const bool = await loginPage.run();
-  const bool = true;
-  console.log("登录成功 =》", bool);
+  // const browser = await puppeteer.connect({
+  //   browserWSEndpoint:
+  //     "ws://localhost:9222/devtools/browser/18045d1a-d4c7-4c1f-9196-3519319ef292",
+  //   defaultViewport: {
+  //     width: 0,
+  //     height: 0,
+  //   },
+  // });
+  const loginPage = new Login(browser);
+  const bool = await loginPage.run();
+  console.log("登录成功");
   if (bool) {
+    await sleep(2000);
     const store = new Store();
     const dataHandler = new DataHandler(browser, store);
     const page = await dataHandler.setStudentId();
     const recordData = await dataHandler.getCourseData(page);
-
-    const tasks = [recordData[0], recordData[1]].map((model) => {
+    const tasks = recordData.slice(0, 3).map((model) => {
       return async () => {
         const signData = await page.evaluate(
           async (m) => {
-            console.log("m", m);
-
             const buildForm = (obj: Record<any, any>) => {
               const form = new FormData();
               for (const key in obj) {
@@ -70,12 +70,6 @@ async function main() {
               },
             );
 
-            // student_id: 2c92e4518c9fe9bd018cab84582d1ed5
-            // source_id: 2c9201c5917927df01917e16aa3a21ce
-            // rewards_content: 参加课程学习:操作系统,第1次课
-            // sys_name: service
-            // opr_id: learning
-            // actions_name: learningCourse
             await window.fetch(
               `https://www.qiaoda.com.cn/api/service/StudentRewards/addStudentRewards.json?bust=${Date.now()}`,
               {
@@ -86,7 +80,6 @@ async function main() {
               },
             );
             const json = await res.json();
-            // https://www.qiaoda.com.cn/edu/service/videoplay/v2/index.html?app_key=9e20bf73779b6627e21b8f0f7a9dce77&signedat=1727429348&sign=0abcdf6c54815ee68e98e4bc11170c85&id=503832594&account=b84582d1ed5&userid=2c92e4518c9fe9bd018cab84582d1ed5&username=%25E8%258E%25AB%25E7%2582%25B3%25E9%2591%25AB&email=20240823151500713707@qq.com&cid=2c9201c58d5dab2a018d5ec0df1223f9&eid=&rid=&aid=20240823151500713707&csid=2c9201c5917927df01917e16aa3a21ce&vtype=2&k=2c9201c59230b683019232d00b1434e7
             return json.Data[0];
           },
           {
@@ -117,6 +110,9 @@ async function main() {
         const _page = await browser.newPage();
         await _page.goto(_videoPalyPath);
         console.log("签到成功 =>", model.resCourseName);
+        await sleep(5000);
+        await _page.click(".vhallPlayer-volume-btn");
+        await _page.click(".vhallPlayer-playBtn");
         //vhallPlayer-playBtn play
         // vhallPlayer-volume-btn
 
@@ -132,18 +128,27 @@ async function main() {
         }
       };
     });
+    console.log("检查执行任务:", tasks.length, " 个");
+    if (tasks.length === 0) {
+      console.log("没有需要签到的课程: 执行关闭");
+      await sleep(2000);
+      await browser.close();
+      await browser.disconnect();
+      process.exit();
+    }
+
+    console.log("开始执行任务: 并发数", globalThis.MAX_TASK);
     const taskQueue = new TaskQueue(tasks);
     taskQueue.executeTaskQueue({
-      maxTask: 1,
-      allDone: () => {
-        console.log("123123", 123123);
+      maxTask: +globalThis.MAX_TASK,
+      allDone: async () => {
+        console.log("本次任务执行完毕,正关闭进程");
+        await browser.close();
+        await browser.disconnect();
+        process.exit();
       },
     });
   }
-
-  // const init = new Init(browser);
-  // await init.getCourse();
-  // await browser.close();
 }
 process.on("uncaughtException", (err) => {
   console.error("error", err?.message);

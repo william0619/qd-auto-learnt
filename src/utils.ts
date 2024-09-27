@@ -21,12 +21,13 @@ export async function setConfig() {
     const json = await fs.readFile(filePath, { encoding: "utf-8" });
     const data = JSON.parse(json);
     console.log("set config =>", data);
-    process.env.CHROME_PATH = data.CHROME_PATH;
-    process.env.MAX_TASK = data.MAX_TASK;
-    process.env.USER_NAME = data.USER_NAME;
-    process.env.PASSWORD = data.PASSWORD;
-    process.env.SCHOOL_NAME = data.SCHOOL_NAME;
-    process.env.SEMESTER_NAME = data.SEMESTER_NAME;
+    globalThis.CHROME_PATH = data.CHROME_PATH;
+    globalThis.MAX_TASK = data.MAX_TASK;
+    globalThis.USER_NAME = data.USER_NAME;
+    globalThis.PASSWORD = data.PASSWORD;
+    globalThis.SCHOOL_NAME = data.SCHOOL_NAME;
+    globalThis.SEMESTER_NAME = data.SEMESTER_NAME;
+    globalThis.HEADLESS = data?.HEADLESS ? Boolean(data.HEADLESS) : false;
   } catch (e) {
     console.error("配置文件有误");
     process.exit();
@@ -39,7 +40,8 @@ export const getChromePath = () => {
     darwin: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     win32: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   }[_os.toString()];
-  return process.env?.CHROME_PATH ? process.env.CHROME_PATH : (defPath ?? "");
+  if (globalThis?.CHROME_PATH) return globalThis.CHROME_PATH;
+  return defPath;
 };
 
 export async function sleep(time: number) {

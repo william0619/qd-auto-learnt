@@ -8,7 +8,7 @@ import { sleep } from "./utils";
 
 export class Login {
   retry = 0;
-  readonly maxTry = 3;
+  readonly maxTry = 5;
 
   constructor(private browser: Browser) {}
 
@@ -16,14 +16,13 @@ export class Login {
     return new Promise(async (resolve, reject) => {
       const page = await this.browser.newPage();
       await page.goto("https://www.qiaoda.com.cn/edu/service/pc/my/login.ftl");
-      await page.type("#usercode", process.env.USER_NAME ?? "", { delay: 50 });
-      await page.type("#userpwd", process.env.PASSWORD ?? "", { delay: 50 });
+      console.log("登录中...");
+      await page.type("#usercode", globalThis.USER_NAME ?? "", { delay: 50 });
+      await page.type("#userpwd", globalThis.PASSWORD ?? "", { delay: 50 });
 
       const successCb = () => {
         setTimeout(() => {
-          // console.log("登录成功");
           resolve(true);
-          // page.close();
         }, 250);
       };
 
@@ -69,7 +68,6 @@ export class Login {
           }
         }
       });
-
       await this.login(page);
     });
   }
@@ -77,19 +75,23 @@ export class Login {
   private async login(page: Page) {
     const element = await page.waitForSelector("#img_captcha");
     if (element) {
+      console.log("获取验证码图片...");
       const arrayBuffer = await element.screenshot();
       let codeBuffer = Buffer.from(arrayBuffer);
       // await sharp(codeBuffer).grayscale().toFile("./2.png");
       try {
+        console.log("识别验证码...");
         const worker = await createWorker("eng", 2, {
+          cacheMethod: "none",
           legacyCore: true,
           legacyLang: true,
+          logger: (m) => console.log(m),
         });
         const result = await worker.recognize(codeBuffer);
         // 去除 \n 和 空格
         const code = result?.data.text.trim();
         await worker.terminate();
-        console.log("code", code);
+        console.log("识别 code", code);
         // 清空input
         await page.$eval("#captchaCode", (el: any) => (el.value = ""));
         await page.type("#captchaCode", code, { delay: 50 });
@@ -97,9 +99,8 @@ export class Login {
         btn?.click();
       } catch (e) {
         console.log("error", e);
+        process.exit();
       }
     }
   }
-
-  private async getUserInfo() {}
 }

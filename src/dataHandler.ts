@@ -31,7 +31,7 @@ export class DataHandler {
             const res = await response.json();
             if (res.result === "0") {
               const d = res.Data.find((item: any) => {
-                return item.school_name === process.env.SCHOOL_NAME;
+                return item.school_name === globalThis.SCHOOL_NAME;
               });
               // console.log("d", d);
               this.store.studentId = d.student_id;
@@ -44,6 +44,7 @@ export class DataHandler {
       }
     };
     page.on("response", getStudentId);
+    console.log("获取用户信息...");
     await page.goto(this.myCourseUrl);
     await sleep(1000);
     // await page.close();
@@ -52,6 +53,7 @@ export class DataHandler {
 
   async getCourseData(page?: Page) {
     if (this.store.studentId) {
+      console.log("开始获取课程...");
       if (!page || page?.url() !== this.myCourseUrl) {
         page = await this.browser.newPage();
         await page.goto(this.myCourseUrl);
@@ -74,7 +76,7 @@ export class DataHandler {
           }
           return null;
         },
-        process.env.SEMESTER_NAME,
+        globalThis.SEMESTER_NAME,
         this.store.studentId,
       );
 
@@ -116,7 +118,7 @@ export class DataHandler {
         },
         subjectData,
         this.store.studentId,
-        process.env.SEMESTER_NAME,
+        globalThis.SEMESTER_NAME,
       );
       this.store.setRecord(curseRes);
       return this.store.recordData;

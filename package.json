@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "./src/main.ts",
   "scripts": {
-    "start": "tsx ./src/main.ts",
-    "watch": "rollup -c  && node ./dist/main.js",
+    "start2": "tsx ./src/main.ts",
+    "start": "rollup -c  && node ./dist/main.js",
     "build": "rimraf ./dist && rollup -c",
     "postbuild": "pkg .",
     "build:pkg": "npm run build &&rimraf ./build && pkg . && npm run copyFile"
@@ -25,9 +25,7 @@
       "config.json"
     ],
     "targets": [
-      "node18-win-x64",
-      "node18-macos-arm64",
-      "node18-macos-x64"
+      "node18-win-x64"
     ],
     "outputPath": "./out"
   },

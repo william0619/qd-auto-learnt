@@ -5,6 +5,7 @@
 import type { Browser, Page } from "puppeteer-core";
 import { createWorker } from "tesseract.js";
 import { sleep } from "./utils";
+import path from "node:path";
 
 export class Login {
   retry = 0;
@@ -82,7 +83,8 @@ export class Login {
       try {
         console.log("识别验证码...");
         const worker = await createWorker("eng", 2, {
-          cacheMethod: "none",
+          // cachePath: path.dirname(process.execPath),
+          // cacheMethod: "none",
           legacyCore: true,
           legacyLang: true,
           logger: (m) => console.log(m),

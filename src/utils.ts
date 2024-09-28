@@ -11,12 +11,16 @@ export function isPkg() {
   return typeof process.pkg !== "undefined";
 }
 
-export async function setConfig() {
-  const executableDir = isPkg()
+export function executableDir() {
+  return isPkg()
     ? path.dirname(process.execPath)
     : path.resolve(process.cwd(), "./");
+}
+
+export async function setConfig() {
+  const dir = executableDir();
   try {
-    const filePath = path.resolve(executableDir, "./config.json");
+    const filePath = path.resolve(dir, "./config.json");
     console.log("config path:", filePath);
     const json = await fs.readFile(filePath, { encoding: "utf-8" });
     const data = JSON.parse(json);
@@ -50,6 +54,10 @@ export async function sleep(time: number) {
       resolve(true);
     }, time);
   });
+}
+// 随机2~10秒
+export function randomTime() {
+  return Math.round(Math.random() * 10 + 3) * 1000;
 }
 
 // export async function connectInfo() {

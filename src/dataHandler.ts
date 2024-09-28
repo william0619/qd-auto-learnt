@@ -6,6 +6,7 @@ import { Browser, HTTPResponse, Page } from "puppeteer-core";
 import { Store } from "./store";
 import { sleep } from "./utils";
 
+// https://saas-api.vhall.com/v3/webinars/watch/sdk-init
 export class DataHandler {
   constructor(
     private browser: Browser,
@@ -15,9 +16,8 @@ export class DataHandler {
   private myCourseUrl =
     "https://www.qiaoda.com.cn/edu/service/pc/my/myCourse.ftl?red=2&in=0";
 
-  async setStudentId() {
+  async setStudentId(page: Page) {
     // 获取
-    const page = await this.browser.newPage();
     const getStudentId = async (response: HTTPResponse) => {
       const url = response.url();
       if (
@@ -124,5 +124,43 @@ export class DataHandler {
       return this.store.recordData;
     }
     return [];
+  }
+
+  async sign(
+    page: Page,
+    args: { signReqParamsData: any; addStudentRewardsParams: any },
+  ) {
+    const signData = await page.evaluate(async (m) => {
+      const buildForm = (obj: Record<any, any>) => {
+        const form = new FormData();
+        for (const key in obj) {
+          form.append(key, obj[key]);
+        }
+        return form;
+      };
+      const res = await window.fetch(
+        "https://www.qiaoda.com.cn/api/service/Attendance/signCourse.json",
+        {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
+          body: buildForm(m.signReqParamsData),
+        },
+      );
+
+      await window.fetch(
+        `https://www.qiaoda.com.cn/api/service/StudentRewards/addStudentRewards.json?bust=${Date.now()}`,
+        {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
+          body: buildForm(m.addStudentRewardsParams),
+        },
+      );
+      const json = await res.json();
+      return json.Data[0];
+    }, args);
+    const configObj = JSON.parse(signData.config_json);
+    return { sourceData: signData, configObj: configObj };
   }
 }

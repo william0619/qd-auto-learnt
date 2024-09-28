@@ -2,8 +2,8 @@
  author: william   email:362661044@qq.com
  create_at: 2024/9/12
  **/
-import puppeteer from "puppeteer-core";
-import { getChromePath, setConfig, sleep } from "./utils";
+import puppeteer, { HTTPResponse } from "puppeteer-core";
+import { getChromePath, randomTime, setConfig, sleep } from "./utils";
 import { Login } from "./login";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -30,6 +30,7 @@ async function main() {
       width: 0,
       height: 0,
     },
+    // slowMo: 10,
     // args: ["--mute-audio"],
   });
   // const browser = await puppeteer.connect({
@@ -44,50 +45,20 @@ async function main() {
   const bool = await loginPage.run();
   console.log("登录成功");
   if (bool) {
-    await sleep(2000);
+    await sleep(1000);
     const store = new Store();
     const dataHandler = new DataHandler(browser, store);
-    const page = await dataHandler.setStudentId();
+    const page = await browser.newPage();
+    await dataHandler.setStudentId(page);
     const recordData = await dataHandler.getCourseData(page);
+
+    // 创建任务
     const tasks = recordData.map((model) => {
       return async () => {
-        const signData = await page.evaluate(
-          async (m) => {
-            const buildForm = (obj: Record<any, any>) => {
-              const form = new FormData();
-              for (const key in obj) {
-                form.append(key, obj[key]);
-              }
-              return form;
-            };
-            const res = await window.fetch(
-              "https://www.qiaoda.com.cn/api/service/Attendance/signCourse.json",
-              {
-                method: "POST",
-                mode: "cors",
-                credentials: "include",
-                body: buildForm(m.signReqParamsData),
-              },
-            );
-
-            await window.fetch(
-              `https://www.qiaoda.com.cn/api/service/StudentRewards/addStudentRewards.json?bust=${Date.now()}`,
-              {
-                method: "POST",
-                mode: "cors",
-                credentials: "include",
-                body: buildForm(m.addStudentRewardsParams),
-              },
-            );
-            const json = await res.json();
-            return json.Data[0];
-          },
-          {
-            signReqParamsData: model.signReqParamsData(),
-            addStudentRewardsParams: model.addStudentRewardsParams(),
-          },
-        );
-        const configObj = JSON.parse(signData.config_json);
+        const { sourceData, configObj } = await dataHandler.sign(page, {
+          signReqParamsData: model.signReqParamsData(),
+          addStudentRewardsParams: model.addStudentRewardsParams(),
+        });
         let _videoPalyPath =
           "https://www.qiaoda.com.cn/edu/service/videoplay/v2/index.html";
         _videoPalyPath += "?app_key=" + configObj.app_key;
@@ -106,8 +77,35 @@ async function main() {
         _videoPalyPath += "&aid=" + model.attendance_id;
         _videoPalyPath += "&csid=" + model.course_scheme_id;
         _videoPalyPath += "&vtype=" + model.vhall_type;
-        _videoPalyPath += "&k=" + signData.key_id;
+        _videoPalyPath += "&k=" + sourceData.key_id;
         const _page = await browser.newPage();
+
+        const getVideoDuration = async (response: HTTPResponse) => {
+          const url = response.url();
+          if (
+            url.includes(
+              "https://saas-api.vhall.com/v3/webinars/watch/sdk-init",
+            )
+          ) {
+            if (response.ok()) {
+              try {
+                const res = await response.json();
+                console.log("res", res);
+                const switchObj = res.data.switch;
+                // 使用dayjs解析时间
+                const start = dayjs(switchObj.start_time);
+                const end = dayjs(switchObj.end_time);
+                // 计算两个时间点之间的差值（以分钟为单位）
+                const duration = end.diff(start, "minute");
+                store.setRecordVideoDuration(model.vhall_id, duration);
+                page.off("response", getVideoDuration);
+              } catch (e) {
+                console.log(e);
+              }
+            }
+          }
+        };
+        _page.on("response", getVideoDuration);
         await _page.goto(_videoPalyPath);
         console.log("签到成功 =>", model.resCourseName);
         await sleep(2000);
@@ -123,7 +121,8 @@ async function main() {
               console.log("重试播放视频 =>", model.resCourseName);
               retry++;
               await _page.reload();
-              await sleep(5000);
+              await sleep(3000);
+              await _page.bringToFront();
               await playVideo();
             } else {
               console.error(
@@ -141,10 +140,13 @@ async function main() {
         while (true) {
           await sleep(60 * 1000);
           curTime += 1;
-          if (curTime >= model.totalDurationMinutes) {
-            console.log("看完了 =>", model.resCourseName);
-            await _page.close();
-            return;
+          const curDuration = store.getRecordVideoDuration()[model.vhall_id];
+          if (curDuration) {
+            if (curTime >= curDuration) {
+              console.log("看完了 =>", model.resCourseName);
+              await _page.close();
+              return;
+            }
           }
         }
       };
@@ -169,6 +171,13 @@ async function main() {
         process.exit();
       },
     });
+    // setInterval(async () => {
+    //   const pages = await browser.pages();
+    //   for (const page of pages) {
+    //     await sleep(1000);
+    //     await page.bringToFront();
+    //   }
+    // }, 10 * 1000);
   }
 }
 process.on("uncaughtException", (err) => {

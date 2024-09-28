@@ -49,7 +49,7 @@ async function main() {
     const dataHandler = new DataHandler(browser, store);
     const page = await dataHandler.setStudentId();
     const recordData = await dataHandler.getCourseData(page);
-    const tasks = recordData.slice(0, 3).map((model) => {
+    const tasks = recordData.map((model) => {
       return async () => {
         const signData = await page.evaluate(
           async (m) => {
@@ -110,11 +110,32 @@ async function main() {
         const _page = await browser.newPage();
         await _page.goto(_videoPalyPath);
         console.log("签到成功 =>", model.resCourseName);
-        await sleep(5000);
-        await _page.click(".vhallPlayer-volume-btn");
-        await _page.click(".vhallPlayer-playBtn");
-        //vhallPlayer-playBtn play
-        // vhallPlayer-volume-btn
+        await sleep(2000);
+        let retry = 0;
+
+        const playVideo = async () => {
+          try {
+            console.log("播放视频 =>", model.resCourseName);
+            await _page.click(".vhallPlayer-volume-btn");
+            await _page.click(".vhallPlayer-playBtn");
+          } catch (e) {
+            if (retry < 5) {
+              console.log("重试播放视频 =>", model.resCourseName);
+              retry++;
+              await _page.reload();
+              await sleep(5000);
+              await playVideo();
+            } else {
+              console.error(
+                "播放视频 =>",
+                model.resCourseName,
+                `超出重试次数${retry}, 请手动观看`,
+              );
+            }
+          }
+        };
+        await playVideo();
+        console.log("等待看完视频 =>", model.resCourseName);
 
         let curTime = Number(model.learning_duration ?? 0);
         while (true) {

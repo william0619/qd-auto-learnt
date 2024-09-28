@@ -62,7 +62,7 @@ export class Login {
                 }
               }
             } catch (e) {
-              console.log("e", e);
+              // console.log("e", e);
               // 成功重定向
               successCb();
             }
@@ -87,7 +87,7 @@ export class Login {
           // cacheMethod: "none",
           legacyCore: true,
           legacyLang: true,
-          logger: (m) => console.log(m),
+          // logger: (m) => console.log(m),
         });
         const result = await worker.recognize(codeBuffer);
         // 去除 \n 和 空格
@@ -100,7 +100,7 @@ export class Login {
         const btn = await page.$(".deal");
         btn?.click();
       } catch (e) {
-        console.log("error", e);
+        // console.log("error", e);
         process.exit();
       }
     }

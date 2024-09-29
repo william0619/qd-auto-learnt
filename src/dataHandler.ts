@@ -5,8 +5,8 @@
 import { Browser, HTTPResponse, Page } from "puppeteer-core";
 import { Store } from "./store";
 import { sleep } from "./utils";
+import dayjs from "dayjs";
 
-// https://saas-api.vhall.com/v3/webinars/watch/sdk-init
 export class DataHandler {
   constructor(
     private browser: Browser,
@@ -54,6 +54,10 @@ export class DataHandler {
   async getCourseData(page?: Page) {
     if (this.store.studentId) {
       console.log("开始获取课程...");
+      const record = this.store.getRecord();
+      if (record && record.length) {
+        return this.store.setRecord(record, false);
+      }
       if (!page || page?.url() !== this.myCourseUrl) {
         page = await this.browser.newPage();
         await page.goto(this.myCourseUrl);
@@ -158,5 +162,31 @@ export class DataHandler {
     }, args);
     const configObj = JSON.parse(signData.config_json);
     return { sourceData: signData, configObj: configObj };
+  }
+
+  async getVideoDuration(page: Page) {
+    const response = await page.waitForResponse(
+      async (response: HTTPResponse) => {
+        const url = response.url();
+        if (
+          url.includes("https://saas-api.vhall.com/v3/webinars/watch/sdk-init")
+        ) {
+          if (response.ok()) {
+            try {
+              await response.json();
+              return true;
+            } catch (e) {
+              return false;
+            }
+          }
+        }
+        return false;
+      },
+    );
+    const res = await response.json();
+    const switchObj = res.data.switch;
+    const start = dayjs(switchObj.start_time);
+    const end = dayjs(switchObj.end_time);
+    return end.diff(start, "minute");
   }
 }

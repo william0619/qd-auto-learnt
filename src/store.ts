@@ -16,10 +16,10 @@ export class Store {
   // 重要数据
   recordData: Array<RecordModel> = [];
 
-  // key=vhall_id  总时长
+  // key=course_scheme_id  总时长
   recordVideoDurationMap: Record<string, number> = {};
 
-  // key=course_id 是否看完
+  // key=course_scheme_id 是否看完
   recordLearntMap: Record<string, boolean> = {};
 
   get cachePath() {
@@ -61,8 +61,10 @@ export class Store {
     }
   }
 
-  setRecord(data: Array<any>) {
-    writeJsonSync(this.recordPath, data);
+  setRecord(data: Array<any>, write = true) {
+    if (write) {
+      writeJsonSync(this.recordPath, data);
+    }
     this.recordData = data.map((item) => {
       return new RecordModel(item);
     });
@@ -70,13 +72,13 @@ export class Store {
     console.log(`获取课程: 一共获取到 ${sourceLen} 门课程`);
     // 过滤 未开始的 和 已经学习完毕的
     this.recordData = this.recordData.filter((item) => {
-      let isLearned = this.getRecordLearnt()[item.course_id];
-      const totalTime = this.getRecordVideoTotalDuration()[item.vhall_id];
+      let isLearned = this.getRecordLearnt(item) ?? false;
+      const totalTime = this.getRecordVideoTotalDuration(item);
 
       if (totalTime) {
         if (Number(item.duration) >= Number(totalTime) && !isLearned) {
           isLearned = true;
-          this.setRecordLearnt(item.course_id, true);
+          this.setRecordLearnt(item, true);
         }
       }
 
@@ -86,44 +88,46 @@ export class Store {
     return this.recordData;
   }
 
-  getRecordVideoTotalDuration() {
+  getRecordVideoTotalDuration(model: RecordModel) {
+    const key = model.course_scheme_id;
     if (Object.keys(this.recordVideoDurationMap).length > 0) {
-      return this.recordVideoDurationMap;
+      return this.recordVideoDurationMap[key];
     }
     try {
       this.recordVideoDurationMap = this.getJsonFile(
         this.recordVideoDurationPath,
       );
-      return this.recordVideoDurationMap;
+      return this.recordVideoDurationMap[key];
     } catch (error) {
-      return {};
+      return null;
     }
   }
 
-  setRecordVideoTotalDuration(key: string, value: number) {
+  setRecordVideoTotalDuration(model: RecordModel, value: number) {
     this.recordVideoDurationMap = this.setJsonFile(
       this.recordVideoDurationPath,
-      { key, value },
+      { [model.course_scheme_id]: value },
     );
     return this.recordVideoDurationMap;
   }
 
-  getRecordLearnt() {
+  getRecordLearnt(model: RecordModel) {
+    const key = model.course_scheme_id;
     if (Object.keys(this.recordLearntMap).length > 0) {
-      return this.recordLearntMap;
+      return this.recordLearntMap[key];
     }
     try {
       this.recordLearntMap = this.getJsonFile(this.recordLearntPath);
-      return this.recordLearntMap;
+      return this.recordLearntMap[key];
     } catch (error) {
-      return {};
+      return null;
     }
   }
 
-  setRecordLearnt(key: string, value: boolean) {
+  setRecordLearnt(model: RecordModel, value: boolean) {
+    const key = model.course_scheme_id;
     this.recordLearntMap = this.setJsonFile(this.recordLearntPath, {
-      key,
-      value,
+      [key]: value,
     });
     return this.recordLearntMap;
   }

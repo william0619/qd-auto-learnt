@@ -9,7 +9,7 @@ import path from "node:path";
 
 export class Login {
   retry = 0;
-  readonly maxTry = 5;
+  readonly maxTry = 6;
 
   constructor(private browser: Browser) {}
 
@@ -70,6 +70,9 @@ export class Login {
         }
       });
       await this.login(page);
+      setTimeout(() => {
+        page.close();
+      }, 2000);
     });
   }
 
@@ -91,7 +94,8 @@ export class Login {
         });
         const result = await worker.recognize(codeBuffer);
         // 去除 \n 和 空格
-        const code = result?.data.text.trim();
+        const code = result?.data.text.trim().replaceAll(/\s/g, "");
+        // const code = result?.data.text.trim();
         await worker.terminate();
         console.log("识别 code", code);
         // 清空input

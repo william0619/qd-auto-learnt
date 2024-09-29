@@ -3,18 +3,17 @@
  create_at: 2024/9/12
  **/
 import puppeteer, { HTTPResponse } from "puppeteer-core";
-import { getChromePath, randomTime, setConfig, sleep } from "./utils";
+import { getChromePath, setConfig, sleep } from "./utils";
 import { Login } from "./login";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-dayjs.extend(duration);
-
 import path from "node:path";
 import { DataHandler } from "./dataHandler";
 import { Store } from "./store";
 import { TaskQueue } from "./taskQueue";
-import { clearInterval } from "node:timers";
 import { setInterval } from "node:timers/promises";
+
+dayjs.extend(duration);
 
 globalThis.taskLock = false;
 // import { DB } from "./db";
@@ -33,7 +32,7 @@ async function main() {
       width: 0,
       height: 0,
     },
-    // slowMo: 10,
+    slowMo: 10,
     // args: ["--mute-audio"],
   });
   // const browser = await puppeteer.connect({
@@ -81,78 +80,59 @@ async function main() {
         _videoPalyPath += "&csid=" + model.course_scheme_id;
         _videoPalyPath += "&vtype=" + model.vhall_type;
         _videoPalyPath += "&k=" + sourceData.key_id;
-        const _page = await browser.newPage();
+        const videoPage = await browser.newPage();
+        await videoPage.goto(_videoPalyPath);
 
-        const getVideoDuration = async (response: HTTPResponse) => {
-          const url = response.url();
-          if (
-            url.includes(
-              "https://saas-api.vhall.com/v3/webinars/watch/sdk-init",
-            )
-          ) {
-            if (response.ok()) {
-              try {
-                const res = await response.json();
-                const switchObj = res.data.switch;
-                const start = dayjs(switchObj.start_time);
-                const end = dayjs(switchObj.end_time);
-                const duration = end.diff(start, "minute");
-                console.log(
-                  "getVideoDuration",
-                  model.resCourseName,
-                  "=>",
-                  duration,
-                );
-                store.setRecordVideoTotalDuration(model.vhall_id, duration);
-                page.off("response", getVideoDuration);
-              } catch (e) {
-                // console.log(e);
-              }
-            }
-          }
-        };
-        _page.on("response", getVideoDuration);
-        await _page.goto(_videoPalyPath);
-        console.log("签到成功 =>", model.resCourseName);
+        let totalDuration = null;
+        totalDuration = store.getRecordVideoTotalDuration(model);
+        if (!totalDuration) {
+          totalDuration = await dataHandler.getVideoDuration(videoPage);
+          store.setRecordVideoTotalDuration(model, totalDuration);
+        }
+        // console.log("签到成功 =>", model.resCourseName);
         let retry = 0;
         const playVideo = async () => {
+          await sleep(3000);
+
+          const clickBtn = async (selector: string) => {
+            const btn = await videoPage.waitForSelector(selector, {
+              timeout: 10 * 1000,
+            });
+            btn?.hover();
+            btn?.focus();
+            btn?.click();
+          };
           try {
-            console.log("播放视频 =>", model.resCourseName);
-            await _page.bringToFront();
-            await _page.click(".vhallPlayer-volume-btn");
-            await _page.click(".vhallPlayer-playBtn");
+            console.log("准备播放视频 =>", model.resCourseName);
+            await videoPage.bringToFront();
+            await clickBtn(".vhallPlayer-volume-btn");
+            // await clickBtn(".vhallPlayer-playBtn");
+            await clickBtn(".play");
           } catch (e) {
-            if (retry < 5) {
-              console.log("重试播放视频 =>", model.resCourseName);
+            // console.log("error", e);
+            if (retry < 6) {
               retry++;
-              await _page.reload();
+              await videoPage.reload();
               await playVideo();
             } else {
               console.error(
-                "播放视频 =>",
+                "播放视频失败 =>",
                 model.resCourseName,
                 `超出重试次数${retry}, 请手动观看`,
               );
             }
           }
         };
-        await sleep(5000);
         await playVideo();
-        console.log("等待看完视频 =>", model.resCourseName);
+        console.log("播放中... =>", model.resCourseName);
 
-        let curTime = Number(model.learning_duration ?? 0);
-
-        const fn = () => {
-          const map = store.getRecordVideoTotalDuration();
-          const total = map[model.vhall_id];
-          return total;
-        };
-        for await (const time of setInterval(1000 * 10, fn)) {
-          const totalTime = time();
+        let curTime = Number(model.duration ?? 0);
+        for await (const totalTime of setInterval(1000 * 60, totalDuration)) {
+          curTime++;
           if (totalTime && curTime >= totalTime) {
-            console.log("看完了 =>", model.resCourseName);
-            store.setRecordLearnt(model.course_id, true);
-            await _page.close();
+            console.log("学习课程完成 =>", model.resCourseName);
+            store.setRecordLearnt(model, true);
+            await videoPage.close();
             break;
           }
         }
@@ -171,6 +151,7 @@ async function main() {
     const taskQueue = new TaskQueue(tasks);
     await taskQueue.executeTaskQueue({
       maxTask: +globalThis.MAX_TASK,
+      stayDuration: 2000,
       allDone: async () => {
         console.log("本次任务执行完毕,正关闭进程");
         await browser.close();

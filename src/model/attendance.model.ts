@@ -5,7 +5,7 @@
 import dayjs from "dayjs";
 import { start } from "node:repl";
 
-export interface Record {
+export interface IRecord {
   attendance_id: string;
   course_code: string;
   course_name: string;
@@ -28,8 +28,8 @@ export interface Record {
   vhall_type: string;
   res_folder_ids: string;
 }
-export class RecordModel implements Record {
-  constructor(data: Record) {
+export class RecordModel implements IRecord {
+  constructor(data: IRecord) {
     this.attendance_id = data.attendance_id;
     this.course_code = data.course_code;
     this.course_name = data.course_name;

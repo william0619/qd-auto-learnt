@@ -13,7 +13,10 @@ import path from "node:path";
 import { DataHandler } from "./dataHandler";
 import { Store } from "./store";
 import { TaskQueue } from "./taskQueue";
-import { createSecretKey } from "node:crypto";
+import { clearInterval } from "node:timers";
+import { setInterval } from "node:timers/promises";
+
+globalThis.taskLock = false;
 // import { DB } from "./db";
 async function main() {
   console.log("cmd path:", process.cwd());
@@ -90,17 +93,20 @@ async function main() {
             if (response.ok()) {
               try {
                 const res = await response.json();
-                console.log("res", res);
                 const switchObj = res.data.switch;
-                // 使用dayjs解析时间
                 const start = dayjs(switchObj.start_time);
                 const end = dayjs(switchObj.end_time);
-                // 计算两个时间点之间的差值（以分钟为单位）
                 const duration = end.diff(start, "minute");
-                store.setRecordVideoDuration(model.vhall_id, duration);
+                console.log(
+                  "getVideoDuration",
+                  model.resCourseName,
+                  "=>",
+                  duration,
+                );
+                store.setRecordVideoTotalDuration(model.vhall_id, duration);
                 page.off("response", getVideoDuration);
               } catch (e) {
-                console.log(e);
+                // console.log(e);
               }
             }
           }
@@ -108,12 +114,11 @@ async function main() {
         _page.on("response", getVideoDuration);
         await _page.goto(_videoPalyPath);
         console.log("签到成功 =>", model.resCourseName);
-        await sleep(2000);
         let retry = 0;
-
         const playVideo = async () => {
           try {
             console.log("播放视频 =>", model.resCourseName);
+            await _page.bringToFront();
             await _page.click(".vhallPlayer-volume-btn");
             await _page.click(".vhallPlayer-playBtn");
           } catch (e) {
@@ -121,8 +126,6 @@ async function main() {
               console.log("重试播放视频 =>", model.resCourseName);
               retry++;
               await _page.reload();
-              await sleep(3000);
-              await _page.bringToFront();
               await playVideo();
             } else {
               console.error(
@@ -133,20 +136,24 @@ async function main() {
             }
           }
         };
+        await sleep(5000);
         await playVideo();
         console.log("等待看完视频 =>", model.resCourseName);
 
         let curTime = Number(model.learning_duration ?? 0);
-        while (true) {
-          await sleep(60 * 1000);
-          curTime += 1;
-          const curDuration = store.getRecordVideoDuration()[model.vhall_id];
-          if (curDuration) {
-            if (curTime >= curDuration) {
-              console.log("看完了 =>", model.resCourseName);
-              await _page.close();
-              return;
-            }
+
+        const fn = () => {
+          const map = store.getRecordVideoTotalDuration();
+          const total = map[model.vhall_id];
+          return total;
+        };
+        for await (const time of setInterval(1000 * 10, fn)) {
+          const totalTime = time();
+          if (totalTime && curTime >= totalTime) {
+            console.log("看完了 =>", model.resCourseName);
+            store.setRecordLearnt(model.course_id, true);
+            await _page.close();
+            break;
           }
         }
       };
@@ -162,7 +169,7 @@ async function main() {
 
     console.log("开始执行任务: 并发数", globalThis.MAX_TASK);
     const taskQueue = new TaskQueue(tasks);
-    taskQueue.executeTaskQueue({
+    await taskQueue.executeTaskQueue({
       maxTask: +globalThis.MAX_TASK,
       allDone: async () => {
         console.log("本次任务执行完毕,正关闭进程");
@@ -171,13 +178,6 @@ async function main() {
         process.exit();
       },
     });
-    // setInterval(async () => {
-    //   const pages = await browser.pages();
-    //   for (const page of pages) {
-    //     await sleep(1000);
-    //     await page.bringToFront();
-    //   }
-    // }, 10 * 1000);
   }
 }
 process.on("uncaughtException", (err) => {

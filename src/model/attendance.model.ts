@@ -53,28 +53,28 @@ export class RecordModel implements Record {
     this.res_folder_ids = data.res_folder_ids;
   }
 
-  get totalDurationMinutes(): number {
-    const [start, end] = this.teach_time_text.split("~");
-    const [sh, sm] = start.split(":");
-    const [eh, em] = end.split(":");
-    const a = dayjs.duration({ hours: +sh, minutes: +sm }).asMinutes();
-    const b = dayjs.duration({ hours: +eh, minutes: +em }).asMinutes();
-    return b - a;
-  }
-
+  // get totalDurationMinutes(): number {
+  //   const [start, end] = this.teach_time_text.split("~");
+  //   const [sh, sm] = start.split(":");
+  //   const [eh, em] = end.split(":");
+  //   const a = dayjs.duration({ hours: +sh, minutes: +sm }).asMinutes();
+  //   const b = dayjs.duration({ hours: +eh, minutes: +em }).asMinutes();
+  //   return b - a;
+  // }
+  //
   get teachDateTime() {
     const [start] = this.teach_time_text.split("~");
     const [h, m] = start.split(":");
     return dayjs(this.teach_date).set("hours", +h).set("minutes", +m);
   }
+  //
+  // get teachDateTimeText() {
+  //   return this.teachDateTime.format("YYYY-MM-DD HH:mm:ss");
+  // }
 
-  get teachDateTimeText() {
-    return this.teachDateTime.format("YYYY-MM-DD HH:mm:ss");
-  }
-
-  isLearned() {
-    return Number(this.learning_duration) >= this.totalDurationMinutes;
-  }
+  // isLearned() {
+  //   return Number(this.learning_duration) >= this.totalDurationMinutes;
+  // }
 
   get resCourseName() {
     return this.course_name + "," + this.res_folder_names;

@@ -3,6 +3,7 @@
  create_at: 2024/9/18
  **/
 declare global {
+  var taskLock: boolean;
   var CHROME_PATH: string;
   var MAX_TASK: string;
   var USER_NAME: string;

@@ -2,6 +2,7 @@
  author: william   email:362661044@qq.com
  create_at: 2024/9/27
  **/
+import { sleep } from "./utils";
 
 type ITask = () => Promise<any>;
 export class TaskQueue {
@@ -35,8 +36,12 @@ export class TaskQueue {
     }
   }
 
-  executeTaskQueue(args: { maxTask: number; allDone?: () => void }) {
-    let { maxTask = 1, allDone } = args;
+  async executeTaskQueue(args: {
+    maxTask: number;
+    allDone?: () => void;
+    stayDuration?: number;
+  }) {
+    let { maxTask = 1, allDone, stayDuration } = args;
     if (maxTask < 1) {
       throw new Error("maxTask不能小于1");
     }
@@ -59,6 +64,9 @@ export class TaskQueue {
     };
 
     for (let i = 0; i < maxTask; i++) {
+      if (stayDuration) {
+        await sleep(stayDuration);
+      }
       executeNextTask(); // 初始执行最大并发数的任务
     }
   }

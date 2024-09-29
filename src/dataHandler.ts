@@ -79,9 +79,6 @@ export class DataHandler {
         globalThis.SEMESTER_NAME,
         this.store.studentId,
       );
-
-      this.store.subjectData = subjectData;
-
       const curseRes = await page.evaluate(
         async (subject, studentId, semesterName) => {
           const getData = (args: {
@@ -120,8 +117,7 @@ export class DataHandler {
         this.store.studentId,
         globalThis.SEMESTER_NAME,
       );
-      this.store.setRecord(curseRes);
-      return this.store.recordData;
+      return this.store.setRecord(curseRes);
     }
     return [];
   }

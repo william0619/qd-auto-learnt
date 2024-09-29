@@ -60,6 +60,23 @@ export function randomTime() {
   return Math.round(Math.random() * 10 + 3) * 1000;
 }
 
+export async function retryFn(
+  fn: () => Promise<any>,
+  option?: { retry?: number; sm?: number },
+) {
+  let { retry = 3, sm = 1000 } = option ?? {};
+
+  while (retry > 0) {
+    try {
+      return await fn();
+    } catch (e) {
+      --retry;
+      await sleep(sm);
+    }
+  }
+  throw new Error("重试次数已用完");
+}
+
 // export async function connectInfo() {
 //   try {
 //     const res = await nodeFetch("http://localhost:9222/json/version", {

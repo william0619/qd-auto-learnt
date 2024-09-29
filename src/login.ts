@@ -25,6 +25,10 @@ export class Login {
         setTimeout(() => {
           resolve(true);
         }, 250);
+
+        setTimeout(() => {
+          page.close();
+        }, 8000);
       };
 
       page.on("response", async (response) => {
@@ -45,7 +49,7 @@ export class Login {
                       window.alert("重试次数超过最大次数 请手动登录！");
                     });
                   } else {
-                    await sleep(300);
+                    await sleep(1000);
                     await this.login(page);
                   }
                   break;
@@ -70,16 +74,16 @@ export class Login {
         }
       });
       await this.login(page);
-      setTimeout(() => {
-        page.close();
-      }, 2000);
+      // setTimeout(() => {
+      //   page.close();
+      // }, 2000);
     });
   }
 
   private async login(page: Page) {
     const element = await page.waitForSelector("#img_captcha");
     if (element) {
-      console.log("获取验证码图片...");
+      // console.log("获取验证码图片...");
       const arrayBuffer = await element.screenshot();
       let codeBuffer = Buffer.from(arrayBuffer);
       // await sharp(codeBuffer).grayscale().toFile("./2.png");

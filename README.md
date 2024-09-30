@@ -27,7 +27,8 @@
 
 ### 使用说明
 - 第一步：准备chrome最新版本浏览器 https://www.google.cn/intl/en_uk/chrome/
-- 第二步：先编辑 config.json 文件，修改账户和密码
+- 第二步：下载对应环境的包，然后解压
+- 第三步：先编辑 config.json 文件，修改账户和密码
 ```shell       
 {
   "CHROME_PATH": "你的浏览器路径" // 默认会根据平台获取路径, 除非自己修改了,否则不需要
@@ -39,7 +40,7 @@
 }
 
 ````
-- 第三步：双击执行文件 auto-learnt 即可
+- 第四步：双击执行文件 auto-learnt-xxx 即可
 
 ### 支持的平台
 · macOS apple arch       

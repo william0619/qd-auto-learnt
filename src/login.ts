@@ -18,6 +18,7 @@ export class Login {
       const page = await this.browser.newPage();
       await page.goto("https://www.qiaoda.com.cn/edu/service/pc/my/login.ftl");
       console.log("登录中...");
+      await page.waitForSelector("#img_captcha");
       await page.type("#usercode", globalThis.USER_NAME ?? "", { delay: 50 });
       await page.type("#userpwd", globalThis.PASSWORD ?? "", { delay: 50 });
 

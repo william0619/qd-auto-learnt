@@ -39,9 +39,9 @@ export class TaskQueue {
   async executeTaskQueue(args: {
     maxTask: number;
     allDone?: () => void;
-    stayDuration?: number;
+    delay?: number;
   }) {
-    let { maxTask = 1, allDone, stayDuration } = args;
+    let { maxTask = 1, allDone, delay } = args;
     if (maxTask < 1) {
       throw new Error("maxTask不能小于1");
     }
@@ -64,8 +64,8 @@ export class TaskQueue {
     };
 
     for (let i = 0; i < maxTask; i++) {
-      if (stayDuration) {
-        await sleep(stayDuration);
+      if (delay) {
+        await sleep(delay);
       }
       executeNextTask(); // 初始执行最大并发数的任务
     }

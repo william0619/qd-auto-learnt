@@ -62,31 +62,31 @@ export function randomTime() {
 
 export async function retryFn(
   fn: () => Promise<any>,
-  option?: { retry?: number; sm?: number },
+  option?: { retry?: number; delay?: number; errorMsg?: string },
 ) {
-  let { retry = 3, sm = 1000 } = option ?? {};
-
-  while (retry > 0) {
+  const { retry = 3, delay = 1000, errorMsg } = option ?? {};
+  let _retry = retry;
+  while (_retry > 0) {
     try {
       return await fn();
     } catch (e) {
-      --retry;
-      await sleep(sm);
+      --_retry;
+      await sleep(delay);
     }
   }
-  throw new Error("重试次数已用完");
+  throw new Error(`重试次数已用完 ${retry} => ${errorMsg}`);
 }
 
-// export async function connectInfo() {
-//   try {
-//     const res = await nodeFetch("http://localhost:9222/json/version", {
-//       method: "get",
-//     });
-//     const data = await res.json();
-//     console.log("browser config", data);
-//     return data;
-//   } catch (error) {
-//     console.log("error: 无法连接 http://localhost:9222/json/version");
-//     return {};
-//   }
-// }
+export async function connectWs(): Promise<string> {
+  try {
+    const res = await fetch("http://localhost:9222/json/version", {
+      method: "get",
+    });
+    const data = await res.json();
+    // console.log("browser config", data);
+    return data?.webSocketDebuggerUrl;
+  } catch (error) {
+    console.log("error: 无法连接 http://localhost:9222/json/version");
+    process.exit();
+  }
+}

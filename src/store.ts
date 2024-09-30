@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { RecordModel } from "./model/attendance.model";
 import path from "node:path";
-import fs from "node:fs";
-import { readJSONSync, writeJsonSync } from "fs-extra";
+import { readJSONSync, writeJsonSync, mkdirsSync } from "fs-extra";
 import { executableDir } from "./utils";
+import crypto from "node:crypto";
 
 /**
  author: william   email:362661044@qq.com
@@ -22,8 +22,10 @@ export class Store {
   // key=course_scheme_id 是否看完
   recordLearntMap: Record<string, boolean> = {};
 
+  md5key: string;
+
   get cachePath() {
-    return path.resolve(executableDir(), "./cache");
+    return path.resolve(executableDir(), `./cache/${this.md5key}`);
   }
 
   get recordPath() {
@@ -48,9 +50,9 @@ export class Store {
   }
 
   constructor() {
-    if (!fs.existsSync(this.cachePath)) {
-      fs.mkdirSync(this.cachePath);
-    }
+    const hash = crypto.createHash("md5");
+    this.md5key = hash.update(globalThis.USER_NAME ?? "user").digest("hex");
+    mkdirsSync(this.cachePath);
   }
 
   getRecord() {

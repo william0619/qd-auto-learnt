@@ -3,7 +3,7 @@
  create_at: 2024/9/12
  **/
 import puppeteer from "puppeteer-core";
-import { connectWs, getChromePath, retryFn, setConfig, sleep } from "./utils";
+import { getChromePath, retryFn, setConfig, sleep } from "./utils";
 import { Login } from "./login";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -12,11 +12,9 @@ import { DataHandler } from "./dataHandler";
 import { Store } from "./store";
 import { TaskQueue } from "./taskQueue";
 import { setInterval } from "node:timers/promises";
-
 dayjs.extend(duration);
+// globalThis.taskLock = false;
 
-globalThis.taskLock = false;
-// import { DB } from "./db";
 async function main() {
   console.log("cmd path:", process.cwd());
   console.log("execPath:", path.dirname(process.execPath));
@@ -101,7 +99,7 @@ async function main() {
                     (video) => video?.duration,
                     video,
                   );
-                  console.warn(model.resCourseName + "获取d", d);
+                  // console.warn(model.resCourseName + "获取d", d);
                   if (d && d > 0) {
                     return Math.ceil(d / 60);
                   }
@@ -125,7 +123,6 @@ async function main() {
               await videoPage.reload();
               await preReadyVideo();
             }
-
             // 接口冇用
             // totalDuration = await dataHandler.getVideoDuration(videoPage);
           }
@@ -136,8 +133,6 @@ async function main() {
             const btn = await videoPage.waitForSelector(selector, {
               timeout: 30 * 1000,
             });
-            // btn?.hover();
-            // btn?.focus();
             btn?.click();
           };
           await videoPage.bringToFront();

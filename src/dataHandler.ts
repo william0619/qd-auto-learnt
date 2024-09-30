@@ -54,10 +54,10 @@ export class DataHandler {
   async getCourseData(page?: Page) {
     if (this.store.studentId) {
       console.log("开始获取课程...");
-      const record = this.store.getRecord();
-      if (record && record.length) {
-        return this.store.setRecord(record, false);
-      }
+      // const record = this.store.getRecord();
+      // if (record && record.length) {
+      //   return this.store.setRecord(record, false);
+      // }
       if (!page || page?.url() !== this.myCourseUrl) {
         page = await this.browser.newPage();
         await page.goto(this.myCourseUrl);

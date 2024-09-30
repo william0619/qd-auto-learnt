@@ -2,7 +2,7 @@
  author: william   email:362661044@qq.com
  create_at: 2024/9/12
  **/
-import puppeteer from "puppeteer-core";
+import puppeteer, { ElementHandle } from "puppeteer-core";
 import { getChromePath, retryFn, setConfig, sleep } from "./utils";
 import { Login } from "./login";
 import dayjs from "dayjs";
@@ -81,51 +81,47 @@ async function main() {
         const videoPage = await browser.newPage();
         await videoPage.goto(_videoPalyPath);
 
-        let retryDuration = 0;
-        const preReadyVideo = async () => {
-          // await sleep(1000);
+        const getVideoEle = async () => {
           await sleep(5000);
           const video = await videoPage.waitForSelector("#video video");
-          let totalDuration = null;
+          if (!video) {
+            throw new Error("获取视频失败");
+          }
+          return video;
+        };
+
+        const getVideoDuration = async (
+          video: ElementHandle<HTMLVideoElement>,
+        ) => {
           // 获取视频时长
-          totalDuration = store.getRecordVideoTotalDuration(model);
+          let totalDuration = store.getRecordVideoTotalDuration(model);
           if (!totalDuration) {
-            try {
-              totalDuration = await retryFn(
-                async () => {
-                  await videoPage.bringToFront();
-                  await sleep(1000);
-                  const d = await videoPage.evaluate(
-                    (video) => video?.duration,
-                    video,
-                  );
-                  // console.warn(model.resCourseName + "获取d", d);
-                  if (d && d > 0) {
-                    return Math.ceil(d / 60);
-                  }
-                  throw new Error();
-                },
-                {
-                  delay: 2000,
-                  retry: 5,
-                  errorMsg: model.resCourseName + "获取视频时长失败",
-                },
-              );
+            totalDuration = await retryFn(
+              async () => {
+                await videoPage.bringToFront();
+                await sleep(1000);
+                const d = await videoPage.evaluate(
+                  (video) => video?.duration,
+                  video,
+                );
+                // console.warn(model.resCourseName + "获取时长", d);
+                if (d && d > 0) {
+                  return Math.ceil(d / 60);
+                }
+                throw new Error();
+              },
+              {
+                delay: 2000,
+                retry: 5,
+                errorMsg: model.resCourseName + "获取视频时长失败",
+              },
+            );
+            if (totalDuration) {
               store.setRecordVideoTotalDuration(model, totalDuration);
               return totalDuration;
-            } catch (e) {
-              retryDuration++;
-              if (retryDuration > 3) {
-                console.error("播放失败 =>", model.resCourseName);
-                await videoPage.close();
-                return;
-              }
-              await videoPage.reload();
-              await preReadyVideo();
             }
-            // 接口冇用
-            // totalDuration = await dataHandler.getVideoDuration(videoPage);
           }
+          throw new Error("获取视频时长失败");
         };
 
         const playVideo = async () => {
@@ -142,22 +138,58 @@ async function main() {
           await clickBtn(".vhallPlayer-volume-btn");
         };
 
-        console.log("准备播放视频... =>", model.resCourseName);
-        const totalDuration = await preReadyVideo();
-        console.log("视频时长 =>", model.resCourseName, totalDuration);
-        await retryFn(playVideo, { retry: 5, delay: 2000 });
-        console.log("播放中... =>", model.resCourseName);
+        let retry = 0;
+        while (retry < 5) {
+          try {
+            console.log("获取视频... =>", model.resCourseName);
+            const video = await getVideoEle();
+            const totalDuration = await getVideoDuration(video);
+            console.log(
+              "准备播放视频 =>",
+              model.resCourseName,
+              totalDuration,
+              "分钟",
+            );
+            await retryFn(playVideo, { retry: 5, delay: 2000 });
+            let curTime = Number(model.duration ?? 0);
+            if (curTime >= totalDuration) {
+              console.log("该课程已完成 =>", model.resCourseName);
+              await sleep(1000);
+              await videoPage.close();
+              store.setRecordLearnt(model, true);
+              return;
+            }
 
-        let curTime = Number(model.duration ?? 0);
-        for await (const totalTime of setInterval(1000 * 60, totalDuration)) {
-          curTime++;
-          if (totalTime && curTime >= totalTime + 1) {
-            console.log("学习课程完成 =>", model.resCourseName);
-            store.setRecordLearnt(model, true);
+            console.log("播放中... =>", model.resCourseName);
+            for await (const totalTime of setInterval(
+              1000 * 60,
+              totalDuration,
+            )) {
+              curTime++;
+              if (totalTime && curTime >= totalTime + 1) {
+                console.log("学习课程完成 =>", model.resCourseName);
+                store.setRecordLearnt(model, true);
+                break;
+              }
+            }
             await videoPage.close();
-            break;
+            return;
+          } catch (e: Error | any) {
+            retry++;
+            console.warn(
+              e?.message,
+              "=>",
+              model.resCourseName,
+              "【重试】:",
+              retry,
+            );
+            await videoPage.reload();
           }
         }
+        // 播放失败
+        console.log("播放失败=>", model.resCourseName);
+        await videoPage.close();
+        return;
       };
     });
 
